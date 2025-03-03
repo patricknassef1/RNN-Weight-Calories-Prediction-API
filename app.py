@@ -15,6 +15,11 @@ api = Api(app, version="1.0", title="Prediction API", description="API for predi
 
 ns = api.namespace("predict", description="Prediction operations")
 
+# Healthcheck Route
+@app.route("/")
+def healthcheck():
+    return jsonify({"message": "API is running"}), 200
+
 # Load the trained models
 try:
     lstm_model = load_model("lstm_model.h5")
