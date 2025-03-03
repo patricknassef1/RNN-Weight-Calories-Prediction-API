@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, reqparse
 import pandas as pd
@@ -15,11 +11,14 @@ app = Flask(__name__)
 api = Api(app, version="1.0", title="Prediction API", description="API for predicting weight based on calorie intake")
 ns = api.namespace("predict", description="Prediction operations")
 
-# Load models
+# Get current working directory (important for Railway)
+BASE_DIR = os.getcwd()
+
+# Load models with absolute paths
 try:
-    lstm_model = load_model("lstm_model.h5")
-    linear_regressor = joblib.load("linear_regressor.pkl")
-    scaler = joblib.load("scaler.pkl")
+    lstm_model = load_model(os.path.join(BASE_DIR, "lstm_model.h5"))
+    linear_regressor = joblib.load(os.path.join(BASE_DIR, "linear_regressor.pkl"))
+    scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
     print("✅ Models loaded successfully")
 except Exception as e:
     print(f"❌ Error loading models: {e}")
@@ -63,10 +62,12 @@ class Predict(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
+# Healthcheck route (IMPORTANT for Railway)
 @app.route("/")
 def home():
-    return jsonify({"message": "Welcome to the Prediction API"}), 200
+    return "API is running", 200  # Plain text response for health checks
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Use Railway PORT or default to 5000
-    app.run(host="0.0.0.0", port=port, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use Railway's assigned PORT
+    app.run(host="0.0.0.0", port=port, debug=False)  # Debug is off in production
+
