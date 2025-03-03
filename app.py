@@ -68,6 +68,6 @@ def home():
     return "API is running", 200  # Plain text response for health checks
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Use Railway's assigned PORT
+    port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)  # Debug is off in production
 
