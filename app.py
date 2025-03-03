@@ -17,23 +17,29 @@ api = Api(app, version="1.0", title="Prediction API", description="API for predi
 ns = api.namespace("predict", description="Prediction operations")
 
 # Healthcheck Route
-@app.route("/")
+@app.route("/health")
 def healthcheck():
     return jsonify({"message": "API is running"}), 200
-
-# Load the trained models
-try:
-    lstm_model = load_model("lstm_model.h5")
-    linear_regressor = joblib.load("linear_regressor.pkl")
-    scaler = joblib.load("scaler.pkl")
-    print("✅ Models loaded successfully")
-except Exception as e:
-    print(f"❌ Error loading models: {e}")
-    lstm_model, linear_regressor, scaler = None, None, None
 
 # File upload parser
 upload_parser = reqparse.RequestParser()
 upload_parser.add_argument("file", type=FileStorage, location="files", required=True, help="CSV file")
+
+# Global models
+lstm_model, linear_regressor, scaler = None, None, None
+
+def load_models():
+    """ Load the models only when needed """
+    global lstm_model, linear_regressor, scaler
+    if lstm_model is None or linear_regressor is None or scaler is None:
+        try:
+            lstm_model = load_model("lstm_model.h5")
+            linear_regressor = joblib.load("linear_regressor.pkl")
+            scaler = joblib.load("scaler.pkl")
+            print("✅ Models loaded successfully")
+        except Exception as e:
+            print(f"❌ Error loading models: {e}")
+            lstm_model, linear_regressor, scaler = None, None, None
 
 @ns.route("/")
 class Predict(Resource):
@@ -43,9 +49,11 @@ class Predict(Resource):
     @api.response(500, "Internal server error")
     def post(self):
         """Predict weight based on past 7 days of weight and calorie intake"""
+        load_models()  # Load models before prediction
+
         if lstm_model is None or linear_regressor is None or scaler is None:
             return {"error": "Model is not available"}, 500
-
+        
         try:
             args = upload_parser.parse_args()
             file = args.get("file")
@@ -85,5 +93,6 @@ class Predict(Resource):
             return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Use Railway's PORT environment variable
+    port = int(os.environ.get("PORT", 5000))  # Automatically uses Railway's port
     app.run(host="0.0.0.0", port=port, debug=True)
+
