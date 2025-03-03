@@ -9,6 +9,7 @@ import numpy as np
 import joblib
 from tensorflow.keras.models import load_model
 from werkzeug.datastructures import FileStorage
+import os
 
 app = Flask(__name__)
 api = Api(app, version="1.0", title="Prediction API", description="API for predicting weight based on calorie intake")
@@ -44,7 +45,7 @@ class Predict(Resource):
         """Predict weight based on past 7 days of weight and calorie intake"""
         if lstm_model is None or linear_regressor is None or scaler is None:
             return {"error": "Model is not available"}, 500
-        
+
         try:
             args = upload_parser.parse_args()
             file = args.get("file")
@@ -84,4 +85,5 @@ class Predict(Resource):
             return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use Railway's PORT environment variable
+    app.run(host="0.0.0.0", port=port, debug=True)
